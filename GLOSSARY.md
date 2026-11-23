@@ -37,7 +37,7 @@ A person's lasting identity (username and PIN) that carries their history across
 _Avoid_: User, profile, login
 
 **Starter**:
-The Player who places the first tile of a Round; they also shuffle and draw their tiles last. In the first Round it is whoever draws the highest tile; afterwards it is the previous Round Winner, or after a Blocked Round the Player with the lowest Round Score in it.
+The Player who places the first tile of a Round; they also shuffle and draw their tiles last. In the first Round it is whoever draws the highest tile; afterwards it is the previous Round Winner, or after a Blocked Round the Player with the lowest Round Score in it. If several Players tie for that lowest Round Score, the Host picks the Starter from among them.
 _Avoid_: Dealer, first player, mano
 
 **Host**:
