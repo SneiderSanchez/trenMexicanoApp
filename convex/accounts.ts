@@ -6,7 +6,7 @@ import { hashPin, randomHex } from "./lib/crypto";
 export const signUp = mutation({
   args: { username: v.string(), pin: v.string() },
   handler: async (ctx, { username: rawUsername, pin }) => {
-    const username = rawUsername.trim();
+    const username = rawUsername.trim().normalize("NFC");
     if (!username) {
       throw new ConvexError("Username is required");
     }
@@ -60,8 +60,9 @@ export const me = query({
   },
 });
 
+/** Accents typed by different keyboards (é vs e + ◌́) compare equal after NFC. */
 function normalizeUsername(username: string): string {
-  return username.trim().toLowerCase();
+  return username.trim().normalize("NFC").toLowerCase();
 }
 
 function findAccountByUsername(ctx: QueryCtx, normalizedUsername: string) {

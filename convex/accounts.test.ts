@@ -119,4 +119,21 @@ describe("Accounts", () => {
     ).rejects.toThrow(/username is already taken/);
     await t.mutation(api.accounts.signIn, { username: "abuela ", pin: "1234" });
   });
+
+  test("an accented username matches however the keyboard encodes the accent", async () => {
+    const t = setup();
+    const decomposed = "José"; // "José" as e + combining acute accent
+    const precomposed = "José"; // "José" as a single é
+    await t.mutation(api.accounts.signUp, { username: decomposed, pin: "1234" });
+    const { token } = await t.mutation(api.accounts.signIn, {
+      username: precomposed,
+      pin: "1234",
+    });
+    expect(await t.query(api.accounts.me, { token })).toEqual({
+      username: precomposed,
+    });
+    await expect(
+      t.mutation(api.accounts.signUp, { username: precomposed, pin: "1234" }),
+    ).rejects.toThrow(/username is already taken/);
+  });
 });
