@@ -105,6 +105,18 @@ describe("Accounts", () => {
     ).rejects.toThrow(/Username is required/);
   });
 
+  test("a username can have at most 20 characters", async () => {
+    const t = setup();
+    await expect(
+      t.mutation(api.accounts.signUp, { username: "A".repeat(21), pin: "1234" }),
+    ).rejects.toThrow(/at most 20 characters/);
+    // Accented letters count as one character each.
+    await t.mutation(api.accounts.signUp, {
+      username: "é".repeat(20),
+      pin: "1234",
+    });
+  });
+
   test("surrounding spaces are ignored in usernames", async () => {
     const t = setup();
     const { token } = await t.mutation(api.accounts.signUp, {

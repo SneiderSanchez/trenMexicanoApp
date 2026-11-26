@@ -7,6 +7,7 @@ import {
   query,
   type QueryCtx,
 } from "./_generated/server";
+import { MAX_USERNAME_LENGTH } from "./lib/accountRules";
 import { accountForToken, endSession, startSession } from "./lib/auth";
 import { hashPin, randomHex } from "./lib/crypto";
 
@@ -16,6 +17,12 @@ export const signUp = mutation({
     const username = rawUsername.trim().normalize("NFC");
     if (!username) {
       throw new ConvexError("Username is required");
+    }
+    // Counts characters, not UTF-16 units, so "é" is one.
+    if ([...username].length > MAX_USERNAME_LENGTH) {
+      throw new ConvexError(
+        `Username can have at most ${MAX_USERNAME_LENGTH} characters`,
+      );
     }
     if (!/^\d{4}$/.test(pin)) {
       throw new ConvexError("PIN must be exactly 4 digits");

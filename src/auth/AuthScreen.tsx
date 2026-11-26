@@ -2,6 +2,7 @@ import { useState, type SubmitEvent } from "react";
 import { useAction, useMutation } from "convex/react";
 import { ConvexError } from "convex/values";
 import { api } from "../../convex/_generated/api";
+import { MAX_USERNAME_LENGTH } from "../../convex/lib/accountRules";
 import { useSession } from "./session";
 
 type Mode = "signIn" | "signUp";
@@ -65,6 +66,7 @@ export function AuthScreen() {
           <input
             value={username}
             onChange={(e) => setUsername(e.target.value)}
+            maxLength={MAX_USERNAME_LENGTH}
             autoComplete="username"
             autoCapitalize="none"
             autoCorrect="off"
