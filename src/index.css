@@ -1,0 +1,117 @@
+:root {
+  --text: #1c1917;
+  --muted: #57534e;
+  --bg: #fafaf9;
+  --surface: #fff;
+  --border: #d6d3d1;
+  --accent: #b91c1c;
+  --accent-text: #fff;
+  --error: #b91c1c;
+
+  font: 17px/1.45 system-ui, "Segoe UI", Roboto, sans-serif;
+  color-scheme: light dark;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-text-size-adjust: 100%;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text: #f5f5f4;
+    --muted: #a8a29e;
+    --bg: #1c1917;
+    --surface: #292524;
+    --border: #44403c;
+    --accent: #ef4444;
+    --error: #fca5a5;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.screen {
+  max-width: 28rem;
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: max(1.5rem, env(safe-area-inset-top)) 1.25rem
+    max(1.5rem, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+h1 {
+  margin: 0;
+  font-size: 1.75rem;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-weight: 600;
+}
+
+input,
+button {
+  font: inherit;
+  min-height: 3rem;
+  border-radius: 0.6rem;
+}
+
+input {
+  padding: 0 0.85rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: max(16px, 1rem); /* avoids iOS zoom on focus */
+}
+
+button {
+  padding: 0 1rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.6;
+}
+
+button.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.tabs [aria-selected="true"] {
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+.error {
+  margin: 0;
+  color: var(--error);
+}
