@@ -1,4 +1,4 @@
-import { useCallback, useState, type ReactNode } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { SessionContext } from "./session";
 
 const STORAGE_KEY = "tren-mexicano.sessionToken";
@@ -13,8 +13,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     else localStorage.removeItem(STORAGE_KEY);
     setTokenState(next);
   }, []);
+  const session = useMemo(() => ({ token, setToken }), [token, setToken]);
   return (
-    <SessionContext.Provider value={{ token, setToken }}>
+    <SessionContext.Provider value={session}>
       {children}
     </SessionContext.Provider>
   );
