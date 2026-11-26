@@ -35,9 +35,9 @@ export default function App() {
     <main className="screen">
       <h1>Tren Mexicano</h1>
       <p>
-        Signed in as <strong>{me.username}</strong>
+        Sesión iniciada como <strong>{me.username}</strong>
       </p>
-      <button onClick={onSignOut}>Sign out</button>
+      <button onClick={onSignOut}>Cerrar sesión</button>
     </main>
   );
 }

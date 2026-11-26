@@ -29,7 +29,7 @@ export function AuthScreen() {
       setError(
         e instanceof ConvexError
           ? String(e.data)
-          : "Something went wrong. Try again.",
+          : "Algo salió mal. Inténtalo de nuevo.",
       );
     } finally {
       setBusy(false);
@@ -50,19 +50,19 @@ export function AuthScreen() {
           aria-selected={mode === "signIn"}
           onClick={() => switchMode("signIn")}
         >
-          Sign in
+          Entrar
         </button>
         <button
           role="tab"
           aria-selected={mode === "signUp"}
           onClick={() => switchMode("signUp")}
         >
-          Sign up
+          Crear cuenta
         </button>
       </div>
       <form className="stack" onSubmit={onSubmit}>
         <label>
-          <span>Username</span>
+          <span>Usuario</span>
           <input
             value={username}
             onChange={(e) => setUsername(e.target.value)}
@@ -74,7 +74,7 @@ export function AuthScreen() {
           />
         </label>
         <label>
-          <span>4-digit PIN</span>
+          <span>PIN de 4 dígitos</span>
           <input
             value={pin}
             onChange={(e) =>
@@ -96,7 +96,7 @@ export function AuthScreen() {
           </p>
         )}
         <button className="primary" type="submit" disabled={busy}>
-          {mode === "signIn" ? "Sign in" : "Create Account"}
+          {mode === "signIn" ? "Entrar" : "Crear cuenta"}
         </button>
       </form>
     </main>

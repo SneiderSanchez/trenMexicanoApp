@@ -16,20 +16,20 @@ export const signUp = mutation({
   handler: async (ctx, { username: rawUsername, pin }) => {
     const username = rawUsername.trim().normalize("NFC");
     if (!username) {
-      throw new ConvexError("Username is required");
+      throw new ConvexError("Escribe un nombre de usuario");
     }
     // Counts characters, not UTF-16 units, so "é" is one.
     if ([...username].length > MAX_USERNAME_LENGTH) {
       throw new ConvexError(
-        `Username can have at most ${MAX_USERNAME_LENGTH} characters`,
+        `El nombre de usuario puede tener como máximo ${MAX_USERNAME_LENGTH} caracteres`,
       );
     }
     if (!/^\d{4}$/.test(pin)) {
-      throw new ConvexError("PIN must be exactly 4 digits");
+      throw new ConvexError("El PIN debe tener exactamente 4 dígitos");
     }
     const normalizedUsername = normalizeUsername(username);
     if (await findAccountByUsername(ctx, normalizedUsername)) {
-      throw new ConvexError("That username is already taken");
+      throw new ConvexError("Ese nombre de usuario ya está en uso");
     }
     const pinSalt = randomHex(16);
     const accountId = await ctx.db.insert("accounts", {
@@ -44,6 +44,8 @@ export const signUp = mutation({
 
 const MAX_FAILED_PIN_ATTEMPTS = 5;
 const LOCKOUT_MS = 5 * 60 * 1000;
+// Same message for an unknown username and a wrong PIN.
+const WRONG_USERNAME_OR_PIN = "Usuario o PIN incorrecto";
 
 /**
  * An action rather than a mutation: a mutation that throws rolls back its
@@ -69,13 +71,13 @@ export const attemptSignIn = internalMutation({
       ctx,
       normalizeUsername(username),
     );
-    if (!account) return { error: "Wrong username or PIN" };
+    if (!account) return { error: WRONG_USERNAME_OR_PIN };
 
     const now = Date.now();
     if (account.lockedUntil !== undefined && now < account.lockedUntil) {
       const minutes = Math.ceil((account.lockedUntil - now) / 60_000);
       return {
-        error: `Too many wrong PINs. Try again in ${minutes} minute${minutes === 1 ? "" : "s"}.`,
+        error: `Demasiados intentos con PIN incorrecto. Inténtalo de nuevo en ${minutes} minuto${minutes === 1 ? "" : "s"}.`,
       };
     }
 
@@ -87,7 +89,7 @@ export const attemptSignIn = internalMutation({
           ? { failedPinAttempts: 0, lockedUntil: now + LOCKOUT_MS }
           : { failedPinAttempts },
       );
-      return { error: "Wrong username or PIN" };
+      return { error: WRONG_USERNAME_OR_PIN };
     }
 
     await ctx.db.patch(account._id, {

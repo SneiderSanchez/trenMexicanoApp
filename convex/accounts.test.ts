@@ -27,7 +27,7 @@ describe("Accounts", () => {
       const t = setup();
       await expect(
         t.mutation(api.accounts.signUp, { username: "Tio", pin }),
-      ).rejects.toThrow(/PIN must be exactly 4 digits/);
+      ).rejects.toThrow(/El PIN debe tener exactamente 4 dígitos/);
     },
   );
 
@@ -36,7 +36,7 @@ describe("Accounts", () => {
     await t.mutation(api.accounts.signUp, { username: "Abuela", pin: "1234" });
     await expect(
       t.mutation(api.accounts.signUp, { username: "abuela", pin: "9999" }),
-    ).rejects.toThrow(/username is already taken/);
+    ).rejects.toThrow(/ya está en uso/);
   });
 
   test("signing in with the right PIN, in any letter case, returns a token for the Account", async () => {
@@ -56,14 +56,14 @@ describe("Accounts", () => {
     await t.mutation(api.accounts.signUp, { username: "Abuela", pin: "1234" });
     await expect(
       t.action(api.accounts.signIn, { username: "Abuela", pin: "4321" }),
-    ).rejects.toThrow(/Wrong username or PIN/);
+    ).rejects.toThrow(/Usuario o PIN incorrecto/);
   });
 
   test("signing in with an unknown username is rejected", async () => {
     const t = setup();
     await expect(
       t.action(api.accounts.signIn, { username: "Nadie", pin: "1234" }),
-    ).rejects.toThrow(/Wrong username or PIN/);
+    ).rejects.toThrow(/Usuario o PIN incorrecto/);
   });
 
   test("signing out invalidates the token", async () => {
@@ -102,14 +102,14 @@ describe("Accounts", () => {
     const t = setup();
     await expect(
       t.mutation(api.accounts.signUp, { username, pin: "1234" }),
-    ).rejects.toThrow(/Username is required/);
+    ).rejects.toThrow(/Escribe un nombre de usuario/);
   });
 
   test("a username can have at most 20 characters", async () => {
     const t = setup();
     await expect(
       t.mutation(api.accounts.signUp, { username: "A".repeat(21), pin: "1234" }),
-    ).rejects.toThrow(/at most 20 characters/);
+    ).rejects.toThrow(/como máximo 20 caracteres/);
     // Accented letters count as one character each.
     await t.mutation(api.accounts.signUp, {
       username: "é".repeat(20),
@@ -128,14 +128,14 @@ describe("Accounts", () => {
     });
     await expect(
       t.mutation(api.accounts.signUp, { username: "abuela", pin: "1234" }),
-    ).rejects.toThrow(/username is already taken/);
+    ).rejects.toThrow(/ya está en uso/);
     await t.action(api.accounts.signIn, { username: "abuela ", pin: "1234" });
   });
 
   test("an accented username matches however the keyboard encodes the accent", async () => {
     const t = setup();
-    const decomposed = "José"; // "José" as e + combining acute accent
-    const precomposed = "José"; // "José" as a single é
+    const decomposed = "Jose\u0301"; // "José" as e + combining acute accent
+    const precomposed = "Jos\u00e9"; // "José" as a single é
     await t.mutation(api.accounts.signUp, { username: decomposed, pin: "1234" });
     const { token } = await t.action(api.accounts.signIn, {
       username: precomposed,
@@ -146,7 +146,7 @@ describe("Accounts", () => {
     });
     await expect(
       t.mutation(api.accounts.signUp, { username: precomposed, pin: "1234" }),
-    ).rejects.toThrow(/username is already taken/);
+    ).rejects.toThrow(/ya está en uso/);
   });
 });
 
@@ -159,7 +159,7 @@ describe("PIN lockout", () => {
     for (let i = 0; i < times; i++) {
       await expect(
         t.action(api.accounts.signIn, { username: "Abuela", pin: "0000" }),
-      ).rejects.toThrow(/Wrong username or PIN/);
+      ).rejects.toThrow(/Usuario o PIN incorrecto/);
     }
   }
 
@@ -169,7 +169,7 @@ describe("PIN lockout", () => {
     await failSignIns(t, 5);
     await expect(
       t.action(api.accounts.signIn, { username: "Abuela", pin: "1234" }),
-    ).rejects.toThrow(/Too many wrong PINs/);
+    ).rejects.toThrow(/Demasiados intentos con PIN incorrecto/);
   });
 
   test("the lockout ends after 5 minutes", async () => {
@@ -181,7 +181,7 @@ describe("PIN lockout", () => {
     vi.advanceTimersByTime(4.5 * 60 * 1000);
     await expect(
       t.action(api.accounts.signIn, { username: "Abuela", pin: "1234" }),
-    ).rejects.toThrow(/Too many wrong PINs. Try again in 1 minute\./);
+    ).rejects.toThrow(/Demasiados intentos con PIN incorrecto\. Inténtalo de nuevo en 1 minuto\./);
 
     vi.advanceTimersByTime(31 * 1000); // just past the 5-minute mark
     const { token } = await t.action(api.accounts.signIn, {
