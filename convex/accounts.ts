@@ -1,5 +1,12 @@
 import { ConvexError, v } from "convex/values";
-import { mutation, query, type QueryCtx } from "./_generated/server";
+import { internal } from "./_generated/api";
+import {
+  action,
+  internalMutation,
+  mutation,
+  query,
+  type QueryCtx,
+} from "./_generated/server";
 import { accountForToken, endSession, startSession } from "./lib/auth";
 import { hashPin, randomHex } from "./lib/crypto";
 
@@ -28,19 +35,58 @@ export const signUp = mutation({
   },
 });
 
-export const signIn = mutation({
+const MAX_FAILED_PIN_ATTEMPTS = 5;
+const LOCKOUT_MS = 5 * 60 * 1000;
+
+/**
+ * An action rather than a mutation: a mutation that throws rolls back its
+ * writes, so the failed attempt would never be counted. The internal
+ * mutation records the attempt and reports the outcome; this throws after.
+ */
+export const signIn = action({
   args: { username: v.string(), pin: v.string() },
-  handler: async (ctx, { username, pin }) => {
+  handler: async (ctx, args): Promise<{ token: string }> => {
+    const result = await ctx.runMutation(internal.accounts.attemptSignIn, args);
+    if ("error" in result) throw new ConvexError(result.error);
+    return result;
+  },
+});
+
+export const attemptSignIn = internalMutation({
+  args: { username: v.string(), pin: v.string() },
+  handler: async (
+    ctx,
+    { username, pin },
+  ): Promise<{ token: string } | { error: string }> => {
     const account = await findAccountByUsername(
       ctx,
       normalizeUsername(username),
     );
-    if (
-      !account ||
-      (await hashPin(pin, account.pinSalt)) !== account.pinHash
-    ) {
-      throw new ConvexError("Wrong username or PIN");
+    if (!account) return { error: "Wrong username or PIN" };
+
+    const now = Date.now();
+    if (account.lockedUntil !== undefined && now < account.lockedUntil) {
+      const minutes = Math.ceil((account.lockedUntil - now) / 60_000);
+      return {
+        error: `Too many wrong PINs. Try again in ${minutes} minute${minutes === 1 ? "" : "s"}.`,
+      };
     }
+
+    if ((await hashPin(pin, account.pinSalt)) !== account.pinHash) {
+      const failedPinAttempts = (account.failedPinAttempts ?? 0) + 1;
+      await ctx.db.patch(
+        account._id,
+        failedPinAttempts >= MAX_FAILED_PIN_ATTEMPTS
+          ? { failedPinAttempts: 0, lockedUntil: now + LOCKOUT_MS }
+          : { failedPinAttempts },
+      );
+      return { error: "Wrong username or PIN" };
+    }
+
+    await ctx.db.patch(account._id, {
+      failedPinAttempts: 0,
+      lockedUntil: undefined,
+    });
     return { token: await startSession(ctx, account._id) };
   },
 });

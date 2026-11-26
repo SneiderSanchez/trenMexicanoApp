@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 import { convexTest } from "convex-test";
-import { describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import { api } from "./_generated/api";
 import schema from "./schema";
 
@@ -42,7 +42,7 @@ describe("Accounts", () => {
   test("signing in with the right PIN, in any letter case, returns a token for the Account", async () => {
     const t = setup();
     await t.mutation(api.accounts.signUp, { username: "Abuela", pin: "1234" });
-    const { token } = await t.mutation(api.accounts.signIn, {
+    const { token } = await t.action(api.accounts.signIn, {
       username: "ABUELA",
       pin: "1234",
     });
@@ -55,14 +55,14 @@ describe("Accounts", () => {
     const t = setup();
     await t.mutation(api.accounts.signUp, { username: "Abuela", pin: "1234" });
     await expect(
-      t.mutation(api.accounts.signIn, { username: "Abuela", pin: "4321" }),
+      t.action(api.accounts.signIn, { username: "Abuela", pin: "4321" }),
     ).rejects.toThrow(/Wrong username or PIN/);
   });
 
   test("signing in with an unknown username is rejected", async () => {
     const t = setup();
     await expect(
-      t.mutation(api.accounts.signIn, { username: "Nadie", pin: "1234" }),
+      t.action(api.accounts.signIn, { username: "Nadie", pin: "1234" }),
     ).rejects.toThrow(/Wrong username or PIN/);
   });
 
@@ -82,7 +82,7 @@ describe("Accounts", () => {
       username: "Abuela",
       pin: "1234",
     });
-    const { token: phoneB } = await t.mutation(api.accounts.signIn, {
+    const { token: phoneB } = await t.action(api.accounts.signIn, {
       username: "Abuela",
       pin: "1234",
     });
@@ -117,7 +117,7 @@ describe("Accounts", () => {
     await expect(
       t.mutation(api.accounts.signUp, { username: "abuela", pin: "1234" }),
     ).rejects.toThrow(/username is already taken/);
-    await t.mutation(api.accounts.signIn, { username: "abuela ", pin: "1234" });
+    await t.action(api.accounts.signIn, { username: "abuela ", pin: "1234" });
   });
 
   test("an accented username matches however the keyboard encodes the accent", async () => {
@@ -125,7 +125,7 @@ describe("Accounts", () => {
     const decomposed = "José"; // "José" as e + combining acute accent
     const precomposed = "José"; // "José" as a single é
     await t.mutation(api.accounts.signUp, { username: decomposed, pin: "1234" });
-    const { token } = await t.mutation(api.accounts.signIn, {
+    const { token } = await t.action(api.accounts.signIn, {
       username: precomposed,
       pin: "1234",
     });
@@ -135,5 +135,58 @@ describe("Accounts", () => {
     await expect(
       t.mutation(api.accounts.signUp, { username: precomposed, pin: "1234" }),
     ).rejects.toThrow(/username is already taken/);
+  });
+});
+
+describe("PIN lockout", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  async function failSignIns(t: ReturnType<typeof setup>, times: number) {
+    for (let i = 0; i < times; i++) {
+      await expect(
+        t.action(api.accounts.signIn, { username: "Abuela", pin: "0000" }),
+      ).rejects.toThrow(/Wrong username or PIN/);
+    }
+  }
+
+  test("after 5 wrong PINs in a row, even the right PIN is rejected", async () => {
+    const t = setup();
+    await t.mutation(api.accounts.signUp, { username: "Abuela", pin: "1234" });
+    await failSignIns(t, 5);
+    await expect(
+      t.action(api.accounts.signIn, { username: "Abuela", pin: "1234" }),
+    ).rejects.toThrow(/Too many wrong PINs/);
+  });
+
+  test("the lockout ends after 5 minutes", async () => {
+    vi.useFakeTimers();
+    const t = setup();
+    await t.mutation(api.accounts.signUp, { username: "Abuela", pin: "1234" });
+    await failSignIns(t, 5);
+
+    vi.advanceTimersByTime(4.5 * 60 * 1000);
+    await expect(
+      t.action(api.accounts.signIn, { username: "Abuela", pin: "1234" }),
+    ).rejects.toThrow(/Too many wrong PINs. Try again in 1 minute\./);
+
+    vi.advanceTimersByTime(31 * 1000); // just past the 5-minute mark
+    const { token } = await t.action(api.accounts.signIn, {
+      username: "Abuela",
+      pin: "1234",
+    });
+    expect(await t.query(api.accounts.me, { token })).toEqual({
+      username: "Abuela",
+    });
+  });
+
+  test("signing in with the right PIN resets the count of wrong PINs", async () => {
+    const t = setup();
+    await t.mutation(api.accounts.signUp, { username: "Abuela", pin: "1234" });
+    await failSignIns(t, 4);
+    await t.action(api.accounts.signIn, { username: "Abuela", pin: "1234" });
+    await failSignIns(t, 4);
+    await t.action(api.accounts.signIn, { username: "Abuela", pin: "1234" });
   });
 });

@@ -7,6 +7,10 @@ export default defineSchema({
     normalizedUsername: v.string(),
     pinHash: v.string(),
     pinSalt: v.string(),
+    // Wrong PINs in a row since the last successful sign-in or lockout.
+    failedPinAttempts: v.optional(v.number()),
+    // Sign-in is refused until this time (ms since epoch).
+    lockedUntil: v.optional(v.number()),
   }).index("by_normalized_username", ["normalizedUsername"]),
 
   sessions: defineTable({

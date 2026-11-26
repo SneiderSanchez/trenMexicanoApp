@@ -1,5 +1,5 @@
 import { useState, type SubmitEvent } from "react";
-import { useMutation } from "convex/react";
+import { useAction, useMutation } from "convex/react";
 import { ConvexError } from "convex/values";
 import { api } from "../../convex/_generated/api";
 import { useSession } from "./session";
@@ -8,7 +8,7 @@ type Mode = "signIn" | "signUp";
 
 export function AuthScreen() {
   const { setToken } = useSession();
-  const signIn = useMutation(api.accounts.signIn);
+  const signIn = useAction(api.accounts.signIn);
   const signUp = useMutation(api.accounts.signUp);
   const [mode, setMode] = useState<Mode>("signIn");
   const [username, setUsername] = useState("");
