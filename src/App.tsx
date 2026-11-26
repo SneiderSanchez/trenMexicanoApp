@@ -16,8 +16,11 @@ export default function App() {
   }
 
   async function onSignOut() {
-    if (token) await signOut({ token });
-    setToken(undefined);
+    try {
+      if (token) await signOut({ token });
+    } finally {
+      setToken(undefined);
+    }
   }
 
   return (
